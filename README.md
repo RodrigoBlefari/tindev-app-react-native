@@ -1,1 +1,0 @@
-# tindev-app-react-native
