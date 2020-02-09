@@ -1,27 +1,57 @@
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { KeyboardAvoidingView, StyleSheet, Image, TextInput, Text, TouchableOpacity, Platform } from 'react-native'
-
+import AsyncStorage from '@react-native-community/async-storage'
 import logo from '../assets/logo.png';
 
-export default function Login() {
-  return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding" enabled={Platform.OS === 'ios'}>
-        <Image source={logo} />
- 
-         <TextInput 
-            style={styles.input} 
-            placeholder="Digite seu usuário no Github" 
-            placeholderTextColor="#999"
-            autoCapitalize="none"
-        />
+import api from '../services/api'
 
-        <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Entrar</Text>
-        </TouchableOpacity>
-        
-    </KeyboardAvoidingView>
-  );
+export default function Login({ navigation }) {
+
+	const [user, setUser] = useState('')
+
+	useEffect(()=>{
+		AsyncStorage.getItem('user').then(user => {
+			if(user){
+				navigation.navigate('Main', { user })
+			}
+		})
+	}, [])
+	
+	async function handleLogin() {
+
+		const response = await api.post('/devs', {
+			username: user
+		})
+
+		const { _id } = response.data
+
+		await AsyncStorage.setItem('user', _id)
+
+		console.log(_id);
+
+		navigation.navigate('Main', { _id })
+	}
+
+	return (
+		<KeyboardAvoidingView style={styles.container} behavior="padding" enabled={Platform.OS === 'ios'}>
+			<Image source={logo} />
+
+			<TextInput
+				style={styles.input}
+				placeholder="Digite seu usuário no Github"
+				placeholderTextColor="#999"
+				autoCapitalize="none"
+				value={user}
+				onChangeText={setUser}
+			/>
+
+			<TouchableOpacity onPress={handleLogin} style={styles.button}>
+				<Text style={styles.buttonText}>Entrar</Text>
+			</TouchableOpacity>
+
+		</KeyboardAvoidingView>
+	);
 };
 
 const styles = StyleSheet.create({
