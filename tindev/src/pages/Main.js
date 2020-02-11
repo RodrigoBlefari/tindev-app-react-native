@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-community/async-storage';
 import { SafeAreaView, View, StyleSheet, Image, Text, TouchableOpacity } from 'react-native';
-//import io from 'socket.io-client';
+import io from 'socket.io-client';
 
 import api from '../services/api';
 
 import logo from '../assets/logo.png';
 import like from '../assets/like.png';
 import dislike from '../assets/dislike.png';
+import itsamatch from '../assets/itsamatch.png';
 
 export default function Main({ navigation }) {
 
 	const id = navigation.getParam('user');
+	const [user, setUser] = useState([]);
 	const [users, setUsers] = useState([]);
+	const [matchDev, setMatchDev] = useState(null)
 
 	useEffect(() => {
 		async function loadUsers() {
@@ -20,15 +23,25 @@ export default function Main({ navigation }) {
 				headers: {
 					user: id
 				}
-			
+
 			})
-			console.log(response.data)
-			setUsers(response.data);
+
+			setUser(response.data.user)
+			setUsers(response.data.users);
 		}
-
 		loadUsers();
-
 	}, [id]);
+
+	useEffect(() => {
+
+		const socket = io('http://localhost:3333', {
+			query: { user: id }
+		})
+
+		socket.on('match', dev => {
+			setMatchDev(dev)
+		})
+	}, [id])
 
 	async function handleLike() {
 		const [user, ...rest] = users;
@@ -58,9 +71,15 @@ export default function Main({ navigation }) {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<TouchableOpacity onPress={handleLogout}>
-				<Image style={styles.logo} source={logo} />
-			</TouchableOpacity>
+			<View style={styles.userHeader} >
+				<Image style={styles.userAvatar} source={{ uri: user.avatar }} />
+				<View style={styles.userContainer}>
+					<Text style={styles.userName}>{user.name}</Text>
+				</View>
+				<TouchableOpacity style={styles.link} onPress={handleLogout}>
+					<Image style={styles.logo} source={logo} />
+				</TouchableOpacity>
+			</View>
 
 			<View style={styles.cardsContainer}>
 
@@ -91,8 +110,8 @@ export default function Main({ navigation }) {
 					</TouchableOpacity>
 				</View>
 			)}
-
-			{/* { matchDev && (
+			
+			{ matchDev && (
 				<View style={styles.matchContainer}>
 					<Image style={styles.matchImage} source={itsamatch} />
 					<Image style={styles.matchAvatar} source={{ uri: matchDev.avatar }} />
@@ -104,7 +123,7 @@ export default function Main({ navigation }) {
 						<Text style={styles.closeMatch}>FECHAR</Text>
 					</TouchableOpacity>
 				</View>
-			) } */}
+			) }
 		</SafeAreaView>
 	);
 }
@@ -118,7 +137,14 @@ const styles = StyleSheet.create({
 	},
 
 	logo: {
-		marginTop: 30,
+		//marginTop: 30,
+	},
+
+	link: {
+		borderWidth: 1,
+		borderColor: '#ddd',
+		paddingHorizontal: 3,
+		paddingVertical: 14,	
 	},
 
 	empty: {
@@ -175,6 +201,7 @@ const styles = StyleSheet.create({
 	buttonContainer: {
 		flexDirection: 'row',
 		marginBottom: 30,
+		zIndex:99999
 	},
 
 	button: {
@@ -198,7 +225,8 @@ const styles = StyleSheet.create({
 		...StyleSheet.absoluteFillObject,
 		backgroundColor: 'rgba(0, 0, 0, 0.8)',
 		justifyContent: 'center',
-		alignItems: 'center'
+		alignItems: 'center',
+		zIndex: 999999
 	},
 
 	matchImage: {
@@ -236,5 +264,31 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		marginTop: 30,
 		fontWeight: 'bold'
+	},
+
+	userHeader: {
+		flexDirection: 'row',
+		paddingVertical: 20,
+		justifyContent: 'center',
+		width: '100%',
+		height: 100
+	},	
+
+	userAvatar: {
+		width: 60,
+		height: 60
+	},
+
+	userContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-around',
+		padding: 20,
+		backgroundColor: '#df4623',
+		paddingHorizontal: 10,
+	},
+
+	userName: {
+		color: '#fff'
 	},
 });
